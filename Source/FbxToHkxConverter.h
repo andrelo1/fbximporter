@@ -20,6 +20,7 @@
 #include <Common/SceneData/Graph/hkxNode.h>
 #include <Common/Base/Container/PointerMap/hkPointerMap.h>
 #include <Common/Base/Container/String/Deprecated/hkStringOld.h>
+#include <Common/Base/Container/String/hkStringBuf.h>
 
 class FbxToHkxConverter
 {
@@ -34,12 +35,9 @@ public:
 		bool		m_exportAnnotations;
 		bool		m_exportLights;
 		bool		m_exportCameras;
-		bool		m_exportSplines;
-		bool		m_exportVertexTangents;
 		bool		m_exportVertexAnimations;
 		bool		m_visibleOnly;
 		bool		m_selectedOnly;
-		bool		m_storeKeyframeSamplePoints;
 
 		Options(FbxManager* fbxSdkManager);
 	};
@@ -100,7 +98,6 @@ private:
 	void addMesh(hkxScene *scene, FbxNode* meshNode, hkxNode* node);
 	void addCamera(hkxScene *scene, FbxNode* cameraNode, hkxNode* node);
 	void addLight(hkxScene *scene, FbxNode* lightNode, hkxNode* node);
-	void addSpline(hkxScene *scene, FbxNode* splineNode, hkxNode* node);
 	hkxMaterial* createMaterial(FbxSurfaceMaterial* lMaterial, FbxMesh* pMesh, hkxScene* scene);
 	void getMaterialsInMesh(FbxMesh* pMesh, hkArray<FbxSurfaceMaterial*>& materialsOut);
 

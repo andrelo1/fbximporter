@@ -129,16 +129,16 @@
     </ResourceCompile>
     <Lib>
       <IgnoreAllDefaultLibraries>False</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkImageUtilities.lib;hkVisualize.lib;hkcdInternal.lib;hkcdCollide.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Lib\win32_vs2012_win7\debug;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/debug;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkVisualize.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Lib\win32_net_9-0\debug_multithreaded_dll;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/debug;</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
       <AdditionalOptions>/SUBSYSTEM:CONSOLE,5.01 /ignore:4221</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkImageUtilities.lib;hkVisualize.lib;hkcdInternal.lib;hkcdCollide.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Lib\win32_vs2012_win7\debug;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/debug;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkVisualize.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Lib\win32_net_9-0\debug_multithreaded_dll;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/debug;</AdditionalLibraryDirectories>
       <AdditionalOptions>/SUBSYSTEM:CONSOLE,5.01 /ignore:4221</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ImportLibrary>
@@ -211,16 +211,16 @@
     </ResourceCompile>
     <Lib>
       <IgnoreAllDefaultLibraries>False</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkImageUtilities.lib;hkVisualize.lib;hkcdInternal.lib;hkcdCollide.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Lib\win32_vs2012_win7\dev;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkVisualize.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Lib\win32_net_9-0\release_multithreaded_dll;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release;</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
       <AdditionalOptions>/SUBSYSTEM:CONSOLE,5.01 /ignore:4221</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkImageUtilities.lib;hkVisualize.lib;hkcdInternal.lib;hkcdCollide.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Lib\win32_vs2012_win7\dev;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkVisualize.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Lib\win32_net_9-0\release_multithreaded_dll;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release;</AdditionalLibraryDirectories>
       <AdditionalOptions>/SUBSYSTEM:CONSOLE,5.01 /ignore:4221</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ImportLibrary>
@@ -293,16 +293,16 @@
     </ResourceCompile>
     <Lib>
       <IgnoreAllDefaultLibraries>False</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkImageUtilities.lib;hkVisualize.lib;hkcdInternal.lib;hkcdCollide.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Lib\win32_vs2012_win7\release;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkVisualize.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Lib\win32_net_9-0\release_multithreaded_dll;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release;</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <UseUnicodeResponseFiles>true</UseUnicodeResponseFiles>
       <AdditionalOptions>/SUBSYSTEM:CONSOLE,5.01 /ignore:4221</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkImageUtilities.lib;hkVisualize.lib;hkcdInternal.lib;hkcdCollide.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\Lib\win32_vs2012_win7\release;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;WinInet.lib;user32.lib;Advapi32.lib;hkBase.lib;hkCompat.lib;hkSceneData.lib;hkSerialize.lib;hkInternal.lib;hkGeometryUtilities.lib;hkVisualize.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\Lib\win32_net_9-0\release_multithreaded_dll;$(HAVOK_THIRDPARTY_DIR)/sdks/win32/FBX/2020.1/lib/vs2012/x86/release</AdditionalLibraryDirectories>
       <AdditionalOptions>/SUBSYSTEM:CONSOLE,5.01 /ignore:4221</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <ImportLibrary>
@@ -318,6 +318,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Source\argh.h" />
     <ClInclude Include="..\Source\FbxToHkxConverter.h">
       <DeploymentContent>False</DeploymentContent>
     </ClInclude>

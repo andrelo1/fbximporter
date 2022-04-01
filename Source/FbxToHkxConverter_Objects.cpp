@@ -8,7 +8,6 @@
 
 #include "FbxToHkxConverter.h"
 #include <Common/SceneData/Scene/hkxSceneUtils.h>
-#include <Common/SceneData/Skin/hkxSkinUtils.h>
 #include <Common/SceneData/Mesh/hkxMeshSectionUtil.h>
 
 template <class T>
@@ -40,39 +39,6 @@ FbxAMatrix FbxToHkxConverter::convertMatrix(const FbxMatrix& mat)
 	ret.SetQ(rot);
 	ret.SetS(scale);
 	return ret;
-}
-
-void FbxToHkxConverter::addSpline(hkxScene *scene, FbxNode* splineNode, hkxNode* node)
-{
-	hkxSpline* newSpline = new hkxSpline;
-
-	FbxNurbsCurve* splineAttrib =(FbxNurbsCurve*)splineNode->GetNodeAttribute();
-	newSpline->m_isClosed =(splineAttrib->GetType()== FbxNurbsCurve::eClosed);
-
-	// Try to get bezier curve data out of the function set
-	const int numControlPoints = splineAttrib->GetControlPointsCount();
-	for(int c=1; c<=numControlPoints; c+=3)
-	{
-		FbxVector4 cvPtL, cvPtM, cvPtR;
-
-		// If spline is closed, get 'in' from last knot for first i==0
-		cvPtL = splineAttrib->GetControlPointAt((c==0 && newSpline->m_isClosed)? numControlPoints-1 : hkMath::max2(0, c-2));  
-		cvPtM = splineAttrib->GetControlPointAt(c-1);
-		// If spline is closed, get 'in' from last knot for first i==0
-		cvPtR = splineAttrib->GetControlPointAt((c==numControlPoints && newSpline->m_isClosed)? 0 : hkMath::min2(c, numControlPoints-1));  
-
-		hkxSpline::ControlPoint& controlpoint = newSpline->m_controlPoints.expandOne();
-
-		controlpoint.m_tangentIn.set((float)cvPtL[0], (float)cvPtL[1], (float)cvPtL[2]);
-		controlpoint.m_position.set((float)cvPtM[0], (float)cvPtM[1], (float)cvPtM[2]);
-		controlpoint.m_tangentOut.set((float)cvPtR[0], (float)cvPtR[1], (float)cvPtR[2]);
-		controlpoint.m_inType = hkxSpline::CUSTOM;
-		controlpoint.m_outType = hkxSpline::CUSTOM;
-	}
-
-	node->m_object = newSpline;
-	scene->m_splines.pushBack(newSpline);
-	newSpline->removeReference();
 }
 
 void FbxToHkxConverter::addCamera(hkxScene *scene, FbxNode* cameraNode, hkxNode* node)
@@ -119,43 +85,24 @@ void FbxToHkxConverter::addLight(hkxScene *scene, FbxNode* lightNode, hkxNode* n
 	const FbxDouble3 color = lightAttrib->Color.Get();
 	newLight->m_color = elementsToARGB(color[0], color[1], color[2], 1.0); 
 
-	newLight->m_intensity =(hkReal)lightAttrib->Intensity.Get();
-	newLight->m_decayRate =(hkInt16)lightAttrib->DecayType.Get();
-	newLight->m_shadowCaster = lightAttrib->CastShadows.Get();
-
 	switch (lightAttrib->LightType.Get())
 	{
 	case FbxLight::ePoint:
 		{
-			newLight->m_type = hkxLight::DIRECTIONAL_LIGHT;
-			if (newLight->m_decayRate)
-			{
-				float cutOff = 0.01f;
-				if (newLight->m_decayRate)
-				{
-					// Calculate range of new light
-					newLight->m_range = hkMath::pow((hkReal)(newLight->m_intensity / cutOff),(hkReal)(1.f / newLight->m_decayRate));
-				}
-				else
-				{
-					HK_WARN_ALWAYS(0x0, "Point lights with no decay are not supported. Please use a directional light, or ambient lighting instead.");
-					newLight->removeReference();
-					newLight = HK_NULL;
-				}
-			}
+			HK_WARN_ALWAYS(0x0, "Point lights are not supported. Please use a directional light, or ambient lighting instead.");
+			newLight->removeReference();
+			newLight = HK_NULL;
 			break;
 		}
 	case FbxLight::eDirectional:
 		{
 			newLight->m_type = hkxLight::DIRECTIONAL_LIGHT;
-			newLight->m_range =(hkReal)lightAttrib->FarAttenuationEnd.Get();
 			break;
 		}
 	case FbxLight::eSpot:
 		{
 			newLight->m_angle =(hkReal)lightAttrib->InnerAngle.Get();
 			newLight->m_type = hkxLight::SPOT_LIGHT;
-			newLight->m_range =(hkReal)lightAttrib->FarAttenuationEnd.Get();
 			break;
 		}
 	default:
@@ -165,10 +112,6 @@ void FbxToHkxConverter::addLight(hkxScene *scene, FbxNode* lightNode, hkxNode* n
 
 	if (newLight)
 	{
-		// This is the range that the camera will start to fade the light out(because it is too far away)
-		newLight->m_fadeStart = newLight->m_range * 2;
-		newLight->m_fadeEnd = newLight->m_range * 3;
-
 		node->m_object = newLight;
 		scene->m_lights.pushBack(newLight);
 		newLight->removeReference();
@@ -184,13 +127,6 @@ static hkxMaterial* createDefaultMaterial(const char* name)
 	mat->m_specularColor = mat->m_diffuseColor;
 	mat->m_specularColor(3)= 75.0f; // Spec power
 	mat->m_emissiveColor.setAll(0);
-	mat->m_specularMultiplier = 0.f;
-	mat->m_specularExponent = 1.f;
-	mat->m_transparency = hkxMaterial::transp_none;
-	mat->m_uvMapOffset[0] = mat->m_uvMapOffset[1] = 0.f;
-	mat->m_uvMapScale[0] = mat->m_uvMapScale[1] = 1.f;
-	mat->m_uvMapRotation = 0.f;
-	mat->m_uvMapAlgorithm = hkxMaterial::UVMA_3DSMAX_STYLE;
 	return mat;
 }
 
@@ -396,10 +332,6 @@ void FbxToHkxConverter::addMesh(hkxScene *scene, FbxNode* meshNode, hkxNode* nod
 		}
 	}
 
-	if (m_options.m_exportVertexTangents)
-	{
-		hkxMeshSectionUtil::computeTangents(newMesh, true, originalMesh->GetName());
-	}
 
 	if (newMesh)
 	{
@@ -420,6 +352,19 @@ void FbxToHkxConverter::addMesh(hkxScene *scene, FbxNode* meshNode, hkxNode* nod
 			newMesh->removeReference();
 		}
 	}
+}
+
+static hkUint8 quantizeWeight(hkReal a_weight)
+{
+	return static_cast<hkUint8>(hkMath::clamp(a_weight, 1.0f, 0.0f) * 255.0f);
+}
+
+static void quantizeWeights(const hkReal inputWeights[4], hkUint8 (&quantizedWeights)[4])
+{
+	quantizedWeights[0] = quantizeWeight(inputWeights[0]);
+	quantizedWeights[1] = quantizeWeight(inputWeights[1]);
+	quantizedWeights[2] = quantizeWeight(inputWeights[2]);
+	quantizedWeights[3] = quantizeWeight(inputWeights[3]);
 }
 
 static bool isNodeFlipped(const FbxNode* node)
@@ -458,11 +403,9 @@ void FbxToHkxConverter::fillBuffers(
 			desiredVertDesc.m_decls.pushBack(hkxVertexDescription::ElementDecl(hkxVertexDescription::HKX_DU_COLOR, hkxVertexDescription::HKX_DT_UINT32, 1));
 		}
 
-		FbxStringList uvSetNameList;
-		pMesh->GetUVSetNames(uvSetNameList);
 		for (int c = 0, numUVs = pMesh->GetElementUVCount(); c < numUVs; ++c)
 		{
-			desiredVertDesc.m_decls.pushBack(hkxVertexDescription::ElementDecl(hkxVertexDescription::HKX_DU_TEXCOORD, hkxVertexDescription::HKX_DT_FLOAT, 2, uvSetNameList[c].Buffer()));
+			desiredVertDesc.m_decls.pushBack(hkxVertexDescription::ElementDecl(hkxVertexDescription::HKX_DU_TEXCOORD, hkxVertexDescription::HKX_DT_FLOAT, 2));
 		}
 
 		if (skinControlPointWeights.getSize()>0 && skinIndicesToClusters.getSize()>0)
@@ -749,7 +692,7 @@ void FbxToHkxConverter::fillBuffers(
 							}
 	
 							hkUint8 tempQWeights[4];
-							hkxSkinUtils::quantizeWeights(tempWeights, tempQWeights);
+							quantizeWeights(tempWeights, tempQWeights);
 	
 							compressedW =	unsigned int(tempQWeights[0])<< 24 |
 											unsigned int(tempQWeights[1])<< 16 | 
@@ -788,10 +731,10 @@ void FbxToHkxConverter::fillBuffers(
 		}
 
 		// Mirrored meshes need to have their faces flipped (EXP-2773)
-		if (isNodeFlipped(originalNode))
-		{
-			hkxSceneUtils::flipWinding(*newIB);
-		}
+		//if (isNodeFlipped(originalNode))
+		//{
+		//	hkxSceneUtils::flipWinding(*newIB);
+		//}
 	}
 }
 
@@ -832,14 +775,6 @@ hkReferencedObject* FbxToHkxConverter::convertTexture(
 				uvSetIndex = 0;
 			}
 		}
-
-		// Update the UV mapping parameters stored within the material
-		mat->m_uvMapAlgorithm = hkxMaterial::UVMA_3DSMAX_STYLE;
-		mat->m_uvMapOffset[0] = (hkReal)fbxTextureFile->GetUVTranslation()[0];
-		mat->m_uvMapOffset[1] = (hkReal)fbxTextureFile->GetUVTranslation()[1];
-		mat->m_uvMapScale[0] = (hkReal)fbxTextureFile->GetUVScaling()[0];
-		mat->m_uvMapScale[1] = (hkReal)fbxTextureFile->GetUVScaling()[1];
-		mat->m_uvMapRotation = (hkReal)fbxTextureFile->GetRotationW();
 
 		hkPointerMap<FbxTexture*, hkRefVariant*>::Iterator it = m_convertedTextures.findKey(fbxTextureFile);
 		if (m_convertedTextures.isValid(it))
@@ -894,14 +829,6 @@ void FbxToHkxConverter::convertTextures(hkxScene *scene, FbxSurfaceMaterial* fbx
 	convertTexture(scene, fbxMat, uvSetNames, mat, FbxSurfaceMaterial::sNormalMap, hkxMaterial::TEX_NORMAL);
 	convertTexture(scene, fbxMat, uvSetNames, mat, FbxSurfaceMaterial::sReflection, hkxMaterial::TEX_REFLECTION);
 	convertTexture(scene, fbxMat, uvSetNames, mat, FbxSurfaceMaterial::sTransparencyFactor, hkxMaterial::TEX_OPACITY);
-
-	FbxProperty lProperty = fbxMat->FindProperty(FbxSurfaceMaterial::sTransparencyFactor);
-
-	// Adjust whether this material has alpha blending enabled
-	if (lProperty.IsValid())
-	{
-		mat->m_transparency = hkxMaterial::transp_alpha;
-	}
 }
 
 void FbxToHkxConverter::getMaterialsInMesh(FbxMesh* pMesh, hkArray<FbxSurfaceMaterial*>& materialsOut)
@@ -949,9 +876,6 @@ hkxMaterial* FbxToHkxConverter::createMaterial(FbxSurfaceMaterial* lMaterial, Fb
 			convertPropertyToVector4(phongMaterial->Diffuse, mat->m_diffuseColor, transparency);
 			convertPropertyToVector4(phongMaterial->Specular, mat->m_specularColor, transparency);
 			convertPropertyToVector4(phongMaterial->Emissive, mat->m_emissiveColor);
-
-			mat->m_specularExponent = static_cast<hkReal>( phongMaterial->Shininess.Get() );
-			mat->m_specularMultiplier = static_cast<hkReal>( phongMaterial->SpecularFactor.Get() );
 		}
 		else if (lMaterial->GetClassId().Is(FbxSurfaceLambert::ClassId))
 		{

@@ -11,7 +11,6 @@
 // This file is templated on the contents of hctMayaSceneExporter_Attributes/hctMaxSceneExporter_Attributes.cpp and will need to be adapted to FBX
 
 #include <Common/SceneData/Graph/hkxNode.h>
-#include <Common/SceneData/Spline/hkxSpline.h>
 #include <Common/Base/Reflection/hkClass.h>
 
 void FbxToHkxConverter::addSampledNodeAttributeGroups(hkxScene *scene, int animStackIndex, FbxObject* fbxObject, hkxAttributeHolder* hkx_attributeHolder, bool recurse)
@@ -76,11 +75,11 @@ void FbxToHkxConverter::addSampledNodeAttributeGroups(hkxScene *scene, int animS
 		hkxMesh* mesh = HK_NULL;
 		const hkClass* classType = ((hkxNode*)hkx_attributeHolder)->m_object.getClass();
 
-		if(classType->equals(&hkxMeshClass))
+		if(strcmp(classType->getName(), hkxMeshClass.getName()) == 0)
 		{
 			mesh = (hkxMesh*) ((hkxNode*)hkx_attributeHolder)->m_object.val();
 		}
-		else if(classType->equals(&hkxSkinBindingClass))
+		else if(strcmp(classType->getName(), hkxSkinBindingClass.getName()) == 0)
 		{
 			hkxSkinBinding* skinBinding = (hkxSkinBinding*) ((hkxNode*)hkx_attributeHolder)->m_object.val();
 			mesh = skinBinding->m_mesh;
@@ -125,7 +124,8 @@ bool FbxToHkxConverter::createAndSampleAttribute(hkxScene *scene, int animStackI
 	}
 
 	// Determine the number of keys we'll store for this attribute based on whether it's animated
-	const hkUint32 numKeys = (lFirstAnimCurve && lFirstAnimCurve->KeyGetCount() > 1) ? scene->m_numFrames + 1 : 1;
+	hkUint32 numFrames = animStackIndex == -1 ? 1 : static_cast<hkUint32>( lAnimStack->GetLocalTimeSpan().GetDuration().GetFrameCount(m_curFbxScene->GetGlobalSettings().GetTimeMode()) );
+	const hkUint32 numKeys = (lFirstAnimCurve && lFirstAnimCurve->KeyGetCount() > 1) ? numFrames + 1 : 1;
 
 	FbxDataType type = prop.GetPropertyDataType();
 	EFbxType dataType = type.GetType();
@@ -295,7 +295,7 @@ handleVectors:
 			animatedData->m_hint = dataTypeHint;
 			hkx_attribute.m_value = animatedData;
 
-			animatedData->m_vectors.setSize(numKeys * 4);
+			animatedData->m_vectors.setSize(numKeys);
 
 			if(numKeys > 1)
 			{
@@ -319,11 +319,11 @@ handleVectors:
 					{
 						if(a < numAnimCurves)
 						{
-							animatedData->m_vectors[storedFloatIndex] = (hkFloat32) lAnimCurves[a]->Evaluate(time);
+							animatedData->m_vectors[storedFloatIndex / 4](a) = (hkReal) lAnimCurves[a]->Evaluate(time);
 						}
 						else
 						{
-							animatedData->m_vectors[storedFloatIndex] = 0.f;
+							animatedData->m_vectors[storedFloatIndex / 4](a) = 0.f;
 						}
 					}
 				}
@@ -332,11 +332,11 @@ handleVectors:
 			{
 				for(int a = 0; a < numAnimCurves; ++a)
 				{
-					animatedData->m_vectors[a] = dataStorage.m_v[a];
+					animatedData->m_vectors[0](a) = dataStorage.m_v[a];
 				}
 				for(int a = numAnimCurves; a < 4; ++a)
 				{
-					animatedData->m_vectors[a] = 0.f;
+					animatedData->m_vectors[0](a) = 0.f;
 				}
 			}
 
@@ -351,7 +351,7 @@ handleVectors:
 			animatedData->m_hint = hkxAttribute::HINT_TRANSFORM_AND_SCALE;
 			hkx_attribute.m_value = animatedData;
 
-			animatedData->m_matrices.setSize(numKeys * 16);
+			animatedData->m_matrices.setSize(numKeys);
 
 			if(numKeys > 1)
 			{
@@ -375,18 +375,14 @@ handleVectors:
 					{
 						fbxMatrix[a] = (hkFloat32) lAnimCurves[a]->Evaluate(time);
 					}
-					hkMatrix4 mat;
-					convertFbxXMatrixToMatrix4(fbxMatrix, mat);
-					mat.get4x4ColumnMajor(&animatedData->m_matrices[numFrames * 16]);
+					convertFbxXMatrixToMatrix4(fbxMatrix, animatedData->m_matrices[numFrames]);
 				}
 			}
 			else
 			{
-				hkMatrix4 mat;
 				FbxDouble4x4 tempMat = prop.Get<FbxDouble4x4>();
 				FbxMatrix fbxMatrix = *reinterpret_cast<FbxMatrix*>(&tempMat);
-				convertFbxXMatrixToMatrix4(fbxMatrix, mat);
-				mat.get4x4ColumnMajor(&animatedData->m_matrices[0]);
+				convertFbxXMatrixToMatrix4(fbxMatrix, animatedData->m_matrices[0]);
 			}
 
 			animatedData->removeReference();

@@ -39,8 +39,8 @@ FbxToHkxConverter::Options::Options(FbxManager *fbxSdkManager) :
 	m_fbxSdkManager(fbxSdkManager),
 	m_exportMeshes(true), m_exportMaterials(true), m_exportAttributes(true),
 	m_exportAnnotations(true), m_exportLights(true), m_exportCameras(true),
-	m_exportSplines(true), m_exportVertexTangents(true), m_exportVertexAnimations(true),
-	m_visibleOnly(false), m_selectedOnly(false), m_storeKeyframeSamplePoints(true)
+	m_exportVertexAnimations(true),
+	m_visibleOnly(false), m_selectedOnly(false)
 {
 	HK_ASSERT(0x0, m_fbxSdkManager);
 }
@@ -111,7 +111,14 @@ void FbxToHkxConverter::saveScenes(const char* path, const char* name)
 		tagfile.append(".hkt");
 
 		hkStringBuf tagpath = path;
-		tagpath.pathAppend(tagfile);
+		tagpath.pathNormalize();
+
+		if (tagpath.getLength() > 0 && !tagpath.endsWith("/"))
+		{
+			tagpath.append("/");
+		}
+
+		tagpath.append(tagfile);
 
 		if ( hkSerializeUtil::save(
 				currentRootContainer,
@@ -126,7 +133,6 @@ void FbxToHkxConverter::saveScenes(const char* path, const char* name)
 			printf("Cannot save file: %s\n", tagfile.cString());
 		}
 
-		printf("Number of frames: %d\n", scene->m_numFrames);
 		printf("Scene length: %0.2f\n", scene->m_sceneLength);
 		printf("Root node name: %s\n", scene->m_rootNode->m_name.cString());
 
@@ -216,6 +222,7 @@ bool FbxToHkxConverter::createScenes(FbxScene* fbxScene, bool noTakes)
 bool FbxToHkxConverter::createSceneStack(int animStackIndex)
 {
 	hkxScene *scene = new hkxScene;
+	hkUint32 numFrames = 0;
 
 	scene->m_modeller.set(m_modeller.cString());
 	scene->m_asset = m_curFbxScene->GetSceneInfo()->Original_FileName.Get();
@@ -248,7 +255,7 @@ bool FbxToHkxConverter::createSceneStack(int animStackIndex)
 		{
 			rootNode->m_name = "ROOT_NODE";
 			scene->m_sceneLength = 0.f;
-			scene->m_numFrames = 1;
+			numFrames = 1;
 			printf("Converting nodes for root...\n");
 		}
 		else
@@ -257,7 +264,7 @@ bool FbxToHkxConverter::createSceneStack(int animStackIndex)
 
 			const FbxTimeSpan animTimeSpan = lAnimStack->GetLocalTimeSpan();
 			scene->m_sceneLength = static_cast<hkReal>( animTimeSpan.GetDuration().GetSecondDouble() );
-			scene->m_numFrames = static_cast<hkUint32>( animTimeSpan.GetDuration().GetFrameCount(m_curFbxScene->GetGlobalSettings().GetTimeMode()) );
+			numFrames = static_cast<hkUint32>( animTimeSpan.GetDuration().GetFrameCount(m_curFbxScene->GetGlobalSettings().GetTimeMode()) );
 			
 			printf("Converting nodes for [%s]...\n", rootNode->m_name.cString());
 		}
@@ -266,7 +273,7 @@ bool FbxToHkxConverter::createSceneStack(int animStackIndex)
 		rootNode->removeReference();
 
 		// Setup (identity) keyframes(s) for the 'static' root node
-		rootNode->m_keyFrames.setSize( scene->m_numFrames > 1 ? 2 : 1, hkMatrix4::getIdentity() );
+		rootNode->m_keyFrames.setSize( numFrames > 1 ? 2 : 1, hkMatrix4::getIdentity() );
 
 		addNodesRecursive(scene, m_rootNode, scene->m_rootNode, currentAnimStackIndex);
 	}
@@ -315,14 +322,6 @@ void FbxToHkxConverter::addNodesRecursive(hkxScene *scene, FbxNode* fbxNode, hkx
 					}
 					break;
 				}
-			case FbxNodeAttribute::eNurbsCurve:
-				{
-					if (m_options.m_exportSplines)
-					{
-						addSpline(scene, fbxChildNode, newChildNode);
-					}
-					break;
-				}
 			case FbxNodeAttribute::eCamera:
 				{
 					// Generate hkxCamera
@@ -339,12 +338,6 @@ void FbxToHkxConverter::addNodesRecursive(hkxScene *scene, FbxNode* fbxNode, hkx
 					{
 						addLight(scene, fbxChildNode, newChildNode);
 					}
-					break;
-				}
-			case FbxNodeAttribute::eSkeleton:
-				{
-					// Flag this node as a bone if it's associated with a skeleton attribute
-					newChildNode->m_bone = true;
 					break;
 				}
 			default:
@@ -364,42 +357,6 @@ void FbxToHkxConverter::addNodesRecursive(hkxScene *scene, FbxNode* fbxNode, hkx
 
 		addNodesRecursive(scene, fbxChildNode, newChildNode, animStackIndex);
 		newChildNode->removeReference();
-	}
-}
-
-static void extractKeyTimes(FbxNode* fbxChildNode, FbxAnimLayer* fbxAnimLayer, const char* channel, hkxNode* node, hkReal startTime, hkReal endTime)
-{
-	HK_ASSERT(0x0, startTime <= endTime || endTime < 0.f);
-	startTime = hkMath::max2(startTime, 0.f);
-	FbxAnimCurve* lAnimCurve = fbxChildNode->LclTranslation.GetCurve(fbxAnimLayer, channel);
-	if (lAnimCurve)
-	{
-		int lKeyCount = lAnimCurve->KeyGetCount();
-		hkReal lKeyTime;
-
-		// Store keyframe times in seconds(from [0, endTime])
-		for(int lCount = 0; lCount < lKeyCount; lCount++)
-		{
-			lKeyTime = hkMath::max2((hkReal)lAnimCurve->KeyGetTime(lCount).GetSecondDouble(), 0.f);
-			if (lKeyTime >= startTime && (lKeyTime <= endTime || endTime < 0.f))
-			{
-				if (node->m_linearKeyFrameHints.indexOf(lKeyTime) < 0)
-				{
-					node->m_linearKeyFrameHints.pushBack(lKeyTime - startTime);
-				}
-			}
-			else // handle case of [EXP-2436], where no keys in the range but range is affected by keys outside, so have to mark at start and end
-			{
-				if ((lKeyTime < startTime) &&(node->m_linearKeyFrameHints.indexOf(0.f) < 0))
-				{
-					node->m_linearKeyFrameHints.pushBack(0.f);
-				}
-				else if (endTime >= 0.f &&(lKeyTime - startTime > endTime) &&(node->m_linearKeyFrameHints.indexOf(endTime - startTime) < 0))
-				{
-					node->m_linearKeyFrameHints.pushBack(endTime - startTime);
-				}
-			}
-		}
 	}
 }
 
@@ -462,7 +419,7 @@ void FbxToHkxConverter::extractKeyFramesAndAnnotations(hkxScene *scene, FbxNode*
 				{
 					FbxString propName  = prop.GetName();
 					FbxDataType lDataType = prop.GetPropertyDataType();
-					if (lDataType.GetType() == eFbxEnum && hkString::beginsWithCase(propName.Buffer(), "HK"))
+					if (lDataType.GetType() == eFbxEnum && propName.Size() >= 2 && hkString::strNcasecmp(propName.Buffer(), "HK", 2) == 0)
 					{
 						FbxAnimLayer* lAnimLayer = lAnimStack->GetMember<FbxAnimLayer>(0);
 						FbxAnimCurve* lAnimCurve = prop.GetCurve(lAnimLayer);
@@ -506,26 +463,6 @@ void FbxToHkxConverter::extractKeyFramesAndAnnotations(hkxScene *scene, FbxNode*
 		if (exportTwoFramesForStaticNodes)
 		{
 			newChildNode->m_keyFrames[1] = newChildNode->m_keyFrames[0];
-		}
-	}
-
-	// Extract all times of actual keyframes for the current node... this can be used by Vision
-	if ( m_options.m_storeKeyframeSamplePoints &&
-		 newChildNode->m_keyFrames.getSize() > 2 &&
-		 numAnimLayers > 0 )
-	{
-		FbxAnimLayer* lAnimLayer = lAnimStack->GetMember<FbxAnimLayer>(0);
-
-		extractKeyTimes(fbxChildNode, lAnimLayer, FBXSDK_CURVENODE_TRANSLATION, newChildNode, startTimeSeconds, endTimeSeconds);
-		extractKeyTimes(fbxChildNode, lAnimLayer, FBXSDK_CURVENODE_ROTATION, newChildNode, startTimeSeconds, endTimeSeconds);
-		extractKeyTimes(fbxChildNode, lAnimLayer, FBXSDK_CURVENODE_SCALING, newChildNode, startTimeSeconds, endTimeSeconds);
-		extractKeyTimes(fbxChildNode, lAnimLayer, FBXSDK_CURVENODE_COMPONENT_X, newChildNode, startTimeSeconds, endTimeSeconds);
-		extractKeyTimes(fbxChildNode, lAnimLayer, FBXSDK_CURVENODE_COMPONENT_Y, newChildNode, startTimeSeconds, endTimeSeconds);
-		extractKeyTimes(fbxChildNode, lAnimLayer, FBXSDK_CURVENODE_COMPONENT_Z, newChildNode, startTimeSeconds, endTimeSeconds);
-
-		if (newChildNode->m_linearKeyFrameHints.getSize() > 1)
-		{
-			hkSort(newChildNode->m_linearKeyFrameHints.begin(), newChildNode->m_linearKeyFrameHints.getSize());
 		}
 	}
 }

@@ -14,7 +14,7 @@
 
 #include <Common/Base/Config/hkProductFeaturesNoPatchesOrCompat.h>
 #include <Common/Base/Config/hkProductFeatures.cxx>
-#include <Common/Base/System/Io/OptionParser/hkOptionParser.h>
+#include <Common/Base/Config/hkConfigVersion.h>
 
 // Keycode
 #include <Common/Base/keycode.cxx>
@@ -28,11 +28,30 @@
 #include <Common/SceneData/Mesh/hkxMesh.h>
 
 #include "FbxToHkxConverter.h"
+#include "argh.h"
 
 static void HK_CALL havokErrorReport(const char* msg, void*)
 {
 	// Output to console
 	printf("%s\n", msg);
+}
+
+static void print_help()
+{
+	printf("FBXImporter\n");
+	printf("Built with %s\n\n", HAVOK_SDK_VERSION_STRING);
+	printf("Converts an fbx file into a havok tagfile (.hkt)\n\n");
+	printf("Usage: [--noTakes=BOOL] [--output=STR] input.fbx\n\n");
+	printf("Positional arguments:\n\n");
+	printf("    input.fbx    input FBX file that is converted to hkt.\n\n");
+	printf("Optional arguments:\n\n");
+	printf("    -t    --noTakes[=BOOL] if set, the first animation take is stored in input.hkt and additional takes are ignored.\n\n");
+	printf("    -o    --output=STR     the absolute path to the output filename. If left unspecified, the input filename is used instead with a changed extension.\n\n");
+	printf("Type Information:\n\n");
+	printf("    BOOL    1 for True, 0 for False\n\n");
+	printf("    INT     Signed integer value between -268435455 and 268435455. Also supports hexadecimal input (-0xFFFFFFF to 0xFFFFFFF)\n\n");
+	printf("    STR     String of characters. Surround strings containing spaces with double quotes\n\n");
+	printf("    NUM     Same as INT, but cannot be negative\n\n");
 }
 
 int main(int argc, char* argv[])
@@ -45,7 +64,7 @@ int main(int argc, char* argv[])
 		// (Use debug mem manager to detect mem leaks in Havok code)
 		hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initChecking(hkMallocAllocator::m_defaultMallocAllocator, frameInfo);
 #else
-		hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initFreeListLargeBlock(hkMallocAllocator::m_defaultMallocAllocator, frameInfo);
+		hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initFreeList(hkMallocAllocator::m_defaultMallocAllocator, frameInfo);
 #endif
 
 		hkBaseSystem::init( memoryRouter, havokErrorReport );
@@ -55,31 +74,28 @@ int main(int argc, char* argv[])
 	}
 
 	bool noTakes = false;
-	const char* inputFile = NULL;
-	const char* outputFile = NULL;
+	std::string inputFile;
+	std::string outputFile;
 	// Parse command line
-	hkOptionParser parser("FBXImporter", "Converts an fbx file into a havok tagfile (.hkt)");
 	{
-		hkOptionParser::Option options[] = 
-		{
-			hkOptionParser::Option("t", "noTakes", "if set, the first animation take is stored in input.hkt and additional takes are ignored.", &noTakes, false),
-			hkOptionParser::Option("o", "output", "the absolute path to the output filename. If left unspecified, the input filename is used instead with a changed extension.", &outputFile)
-		};
+		argh::parser cmdl(argc, argv);
 
-		if (parser.setOptions(options, HK_COUNT_OF(options)))
-		{
-			parser.setArguments("input.fbx", "input FBX file that is converted to hkt.", hkOptionParser::ARGUMENTS_ONE, &inputFile, 1);
-			hkOptionParser::ParseResult result = parser.parse(argc, const_cast<const char**>(&argv[0]));
-			if (result != hkOptionParser::PARSE_SUCCESS)
-			{
-				return -1;
-			}
+		if ((cmdl.pos_args().size() - 1) != 1) {
+			printf("ERROR: Incorrect number of positional arguments; Should be %d, found %d\n\n", 1, cmdl.pos_args().size() - 1);
+			print_help();
+			return -1;
 		}
+
+		cmdl(1) >> inputFile;
+		cmdl("o", outputFile) >> outputFile;
+		cmdl("output", outputFile) >> outputFile;
+		cmdl("t", noTakes) >> noTakes;
+		cmdl("noTakes", noTakes) >> noTakes;
 	}
 
 	// Load FBX and save as HKX
 	{
-		hkStringBuf filename = inputFile;
+		hkStringBuf filename = inputFile.c_str();
 		filename.pathNormalize();
 
 		FbxManager* fbxSdkManager = FbxManager::Create();
@@ -124,9 +140,9 @@ int main(int argc, char* argv[])
 			hkStringBuf path;
 			hkStringBuf name;
 			// Was an output filename provided?
-			if (outputFile != NULL)
+			if (!outputFile.empty())
 			{
-				path = outputFile;
+				path = outputFile.c_str();
 				path.pathNormalize();
 				name = path;
 				path.pathDirname();
