@@ -76,6 +76,7 @@ Dependencies
 * [FBX SDK 2020.1 VS 2012][4]
 * [Python Tools for Visual Studio][5] - Useful for debugging your projects and we include a .pyproj/.sln so you'll need to have it installed to successfully open the solution.
 * [py2exe][6] - Needed if you're going to create a package
+* [argh][7]
 
 Compiling
 ---------
@@ -110,3 +111,4 @@ Use of this software for evaluation purposes is subject to and indicates accepta
 [4]: https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2020-1
 [5]: http://pytools.codeplex.com/
 [6]: http://www.py2exe.org/
+[7]: https://github.com/adishavit/argh
