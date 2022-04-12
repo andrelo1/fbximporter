@@ -86,9 +86,9 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 
-		cmdl(1) >> inputFile;
-		cmdl("o", outputFile) >> outputFile;
-		cmdl("output", outputFile) >> outputFile;
+		inputFile = cmdl(1).str();
+		outputFile = cmdl("o", outputFile).str();
+		outputFile = cmdl("output", outputFile).str();
 		cmdl("t", noTakes) >> noTakes;
 		cmdl("noTakes", noTakes) >> noTakes;
 	}
